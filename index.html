@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Calorie Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; color: #1e293b; }
+        .progress-ring__circle { transition: stroke-dashoffset 0.5s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .animate-spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Login Screen (No changes) -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm"><h1 class="text-2xl font-bold text-center text-slate-800">Welcome!</h1><p class="text-center text-slate-500 mt-2 mb-6">Enter username and password to start.</p><div class="space-y-4"><input id="username-input" type="text" placeholder="Username" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"><input id="password-input" type="password" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"></div><p id="login-error" class="text-red-500 text-sm mt-2 h-4"></p><button id="login-btn" class="mt-4 w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition flex items-center justify-center"><span id="login-btn-text">Start Tracking</span><svg id="login-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></button></div>
+    </div>
+
+    <!-- Main App (Layout MODIFIED) -->
+    <div id="app" class="max-w-7xl mx-auto p-4 hidden">
+        <header class="flex justify-between items-center py-2 mb-4">
+            <h1 class="text-3xl font-bold text-slate-800">Hello, <span id="username-display"></span>!</h1>
+            <div class="text-right">
+                <input type="date" id="date-picker" class="p-2 border border-slate-300 rounded-lg bg-white text-slate-700 focus:ring-2 focus:ring-green-500">
+            </div>
+        </header>
+
+        <!-- NEW: Two-column layout -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Center Column (Main Content) -->
+            <div class="md:col-span-2 space-y-6">
+                <main class="bg-white p-6 rounded-2xl shadow-lg space-y-6">
+                    <!-- Dashboard content (progress rings, etc.) remains here -->
+                    <div class="text-center"><div class="relative inline-block"><svg class="w-40 h-40"><circle class="text-slate-200" stroke-width="12" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/><circle id="calorie-progress-ring" class="text-green-500 progress-ring__circle" stroke-width="12" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/></svg><div class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center"><span id="calories-consumed" class="text-3xl font-bold text-slate-800">0</span><span class="text-slate-500">/</span><span id="calories-target" class="text-lg text-slate-500">2000</span><span class="text-sm text-slate-400">kcal</span></div></div></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"><div><p class="font-semibold text-slate-700">Protein</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="protein-bar" class="bg-sky-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="protein-consumed">0</span> / <span id="protein-target">100</span>g</p></div><div><p class="font-semibold text-slate-700">Carbs</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="carbs-bar" class="bg-amber-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="carbs-consumed">0</span> / <span id="carbs-target">250</span>g</p></div><div><p class="font-semibold text-slate-700">Fat</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="fat-bar" class="bg-rose-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="fat-consumed">0</span> / <span id="fat-target">60</span>g</p></div><div><p class="font-semibold text-slate-700">Fiber</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="fiber-bar" class="bg-lime-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="fiber-consumed">0</span> / <span id="fiber-target">30</span>g</p></div></div>
+                </main>
+                <div id="meal-sections" class="space-y-4"></div>
+            </div>
+
+            <!-- NEW: Right Column (Nutrition Lookup) -->
+            <aside class="hidden md:block bg-white p-6 rounded-2xl shadow-lg space-y-4 h-fit sticky top-4">
+                <h2 class="text-xl font-bold text-slate-800">Nutrition Facts</h2>
+                <input id="nutrition-search" type="text" placeholder="Search your saved foods..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                <div id="nutrition-panel" class="space-y-3 custom-scrollbar max-h-[60vh] overflow-y-auto">
+                    <!-- Nutrition details will be rendered here -->
+                    <p class="text-slate-500 text-center pt-4">Search for a food or click an item from your library to see details here.</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Add Food Modal (HEAVILY MODIFIED for Multi-Food Entry) -->
+    <div id="add-food-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 space-y-4">
+            <h2 class="text-xl font-bold text-slate-800">Add Food to <span id="modal-meal-type" class="text-green-600"></span></h2>
+            
+            <!-- Item Entry Section -->
+            <div class="flex items-center space-x-2">
+                <textarea id="food-description-input" rows="1" class="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., 2 slices of pepperoni pizza"></textarea>
+                <button id="analyze-food-btn" class="bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 transition flex items-center shrink-0">
+                    <span id="analyze-btn-text">Add to Meal</span>
+                    <svg id="analyze-spinner" class="animate-spin-slow h-5 w-5 text-white hidden ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </button>
+            </div>
+            <p id="modal-error" class="text-red-500 text-sm h-4"></p>
+
+            <!-- Meal Builder List -->
+            <div class="space-y-2">
+                <h3 class="font-semibold text-slate-600">Items in this Meal:</h3>
+                <div id="meal-builder-list" class="border border-slate-200 rounded-lg max-h-40 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                    <p class="text-slate-400 text-center p-2">Items you analyze will appear here.</p>
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end space-x-3">
+                <button id="cancel-add-food-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">Cancel</button>
+                <button id="confirm-add-all-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition disabled:bg-blue-300 disabled:cursor-not-allowed">Confirm & Add All</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- STATE & CONFIG---
+    const API_BASE_URL = 'http://127.0.0.1:8000';
+    const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+    let state = {
+        currentUser: null,
+        currentDate: new Date().toISOString().split('T')[0],
+        foodLog: [], 
+        foodItems: [], // User's personal food library
+        targets: { calories: 2000, protein: 100, carbs: 250, fat: 60, fiber: 30 },
+        currentMealType: null,
+        mealBuilderItems: [], // NEW: for multi-food modal
+    };
+    
+    // --- DOM ELEMENTS ---
+    const loginScreen = document.getElementById('login-screen');
+    const appScreen = document.getElementById('app');
+    const loginBtn = document.getElementById('login-btn');
+    const usernameInput = document.getElementById('username-input');
+    const passwordInput = document.getElementById('password-input');
+    const loginError = document.getElementById('login-error');
+    const usernameDisplay = document.getElementById('username-display');
+    const datePicker = document.getElementById('date-picker');
+    const mealSectionsContainer = document.getElementById('meal-sections');
+    const addFoodModal = document.getElementById('add-food-modal');
+    const modalMealType = document.getElementById('modal-meal-type');
+    const foodDescriptionInput = document.getElementById('food-description-input');
+    const analyzeFoodBtn = document.getElementById('analyze-food-btn');
+    const confirmAddAllBtn = document.getElementById('confirm-add-all-btn');
+    const cancelAddFoodBtn = document.getElementById('cancel-add-food-btn');
+    const modalError = document.getElementById('modal-error');
+    const mealBuilderList = document.getElementById('meal-builder-list');
+    const nutritionPanel = document.getElementById('nutrition-panel');
+    const nutritionSearchInput = document.getElementById('nutrition-search');
+
+    // --- INITIALIZATION ---
+    function init() {
+        const savedUser = sessionStorage.getItem('currentUser');
+        if (savedUser) { state.currentUser = savedUser; showApp(); } 
+        else { showLogin(); }
+        
+        loginBtn.addEventListener('click', handleLogin);
+        datePicker.addEventListener('change', (e) => {
+            state.currentDate = e.target.value;
+            fetchLogsForDate(state.currentDate);
+        });
+        cancelAddFoodBtn.addEventListener('click', closeAddFoodModal);
+        analyzeFoodBtn.addEventListener('click', handleAnalyzeFood);
+        confirmAddAllBtn.addEventListener('click', handleConfirmAddAll);
+        nutritionSearchInput.addEventListener('input', handleNutritionSearch);
+    }
+    
+    // --- LOGIN & SCREEN MANAGEMENT ---
+    async function handleLogin() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!username || !password) { loginError.textContent = "Please provide all details."; return; }
+        loginError.textContent = "";
+        toggleSpinner('login-spinner', 'login-btn-text', true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "Login failed");
+            }
+            state.currentUser = username;
+            sessionStorage.setItem('currentUser', username);
+            await showApp();
+        } catch (error) {
+            loginError.textContent = error.message;
+        } finally {
+            toggleSpinner('login-spinner', 'login-btn-text', false);
+        }
+    }
+    function showLogin() { appScreen.classList.add('hidden'); loginScreen.classList.remove('hidden'); }
+    async function showApp() {
+        loginScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        usernameDisplay.textContent = state.currentUser;
+        datePicker.value = state.currentDate;
+        renderMealSections();
+        await Promise.all([
+            fetchLogsForDate(state.currentDate),
+            fetchFoodItems()
+        ]);
+        renderNutritionPanel(state.foodItems.slice(0, 5)); // Show first 5 items initially
+    }
+    
+    // --- DATA FETCHING & RENDERING ---
+    async function fetchLogsForDate(date) {
+        if (!state.currentUser) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/log/${state.currentUser}/${date}`);
+            if (!response.ok) throw new Error("Could not fetch data.");
+            state.foodLog = await response.json();
+            updateDashboard();
+        } catch (error) {
+            console.error("Fetch Error:", error);
+        }
+    }
+    async function fetchFoodItems() {
+        if (!state.currentUser) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/food-items/${state.currentUser}`);
+            if (!response.ok) throw new Error("Could not fetch food items.");
+            state.foodItems = await response.json();
+        } catch (error) { console.error("Fetch Items Error:", error); }
+    }
+    function renderMealSections() {
+        mealSectionsContainer.innerHTML = '';
+        mealTypes.forEach(meal => {
+            const section = document.createElement('div');
+            section.className = 'bg-white p-4 rounded-2xl shadow-lg';
+            section.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-slate-800">${meal}</h2>
+                    <button data-meal-type="${meal}" class="add-food-btn bg-green-100 text-green-700 rounded-full w-8 h-8 flex items-center justify-center hover:bg-green-200 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    </button>
+                </div>
+                <div id="log-${meal.toLowerCase()}" class="mt-4 space-y-2"></div>
+                <div class="text-right mt-2 font-semibold text-slate-600">Total: <span id="total-${meal.toLowerCase()}">0</span> kcal</div>
+            `;
+            mealSectionsContainer.appendChild(section);
+        });
+        document.querySelectorAll('.add-food-btn').forEach(btn => {
+            btn.addEventListener('click', () => openAddFoodModal(btn.dataset.mealType));
+        });
+    }
+
+    function updateDashboard() {
+        let totals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+        mealTypes.forEach(meal => {
+            const mealContainer = document.getElementById(`log-${meal.toLowerCase()}`);
+            if(mealContainer) mealContainer.innerHTML = '';
+            const totalEl = document.getElementById(`total-${meal.toLowerCase()}`);
+            if(totalEl) totalEl.textContent = '0';
+        });
+
+        state.foodLog.forEach(log => {
+            const { food_item, quantity } = log;
+            totals.calories += food_item.calories * quantity;
+            totals.protein += food_item.protein * quantity;
+            totals.carbs += food_item.carbs * quantity;
+            totals.fat += food_item.fat * quantity;
+            totals.fiber += food_item.fiber * quantity;
+
+            const mealContainer = document.getElementById(`log-${log.meal_type.toLowerCase()}`);
+            if (mealContainer) {
+                const mealTotalEl = document.getElementById(`total-${log.meal_type.toLowerCase()}`);
+                mealTotalEl.textContent = (parseFloat(mealTotalEl.textContent) + food_item.calories * quantity).toFixed(0);
+                const foodEl = document.createElement('div');
+                foodEl.className = 'flex justify-between items-center text-slate-600';
+                foodEl.innerHTML = `<span>${quantity.toFixed(2)} x ${food_item.name}</span><div class="flex items-center space-x-2"><span>${(food_item.calories * quantity).toFixed(0)} kcal</span><button data-log-id="${log.id}" class="delete-log-btn text-red-400 hover:text-red-600 font-bold text-xl transition-all duration-200">&times;</button></div>`;
+                mealContainer.appendChild(foodEl);
+            }
+        });
+        
+        updateProgressCircle('calorie-progress-ring', totals.calories, state.targets.calories);
+        document.getElementById('calories-consumed').textContent = totals.calories.toFixed(0);
+        updateProgressBar('protein-bar', totals.protein, state.targets.protein); document.getElementById('protein-consumed').textContent = totals.protein.toFixed(1);
+        updateProgressBar('carbs-bar', totals.carbs, state.targets.carbs); document.getElementById('carbs-consumed').textContent = totals.carbs.toFixed(1);
+        updateProgressBar('fat-bar', totals.fat, state.targets.fat); document.getElementById('fat-consumed').textContent = totals.fat.toFixed(1);
+        updateProgressBar('fiber-bar', totals.fiber, state.targets.fiber); document.getElementById('fiber-consumed').textContent = totals.fiber.toFixed(1);
+
+        document.querySelectorAll('.delete-log-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => handleDeleteLog(e.currentTarget.dataset.logId));
+        });
+    }
+
+    // --- NUTRITION PANEL LOGIC ---
+    function handleNutritionSearch(e) {
+        const query = e.target.value.toLowerCase();
+        if (!query) {
+            renderNutritionPanel(state.foodItems.slice(0, 5));
+            return;
+        }
+        const results = state.foodItems.filter(item => item.name.toLowerCase().includes(query));
+        renderNutritionPanel(results);
+    }
+
+    function renderNutritionPanel(itemsToRender) {
+        if (!itemsToRender || itemsToRender.length === 0) {
+            nutritionPanel.innerHTML = `<p class="text-slate-500 text-center pt-4">No items found.</p>`;
+            return;
+        }
+        nutritionPanel.innerHTML = itemsToRender.map(item => `
+            <div class="p-3 border border-slate-200 rounded-lg bg-slate-50">
+                <h4 class="font-bold text-slate-800 capitalize">${item.name}</h4>
+                <p class="text-xs text-slate-500 mb-2">Per ${item.serving_size_unit}</p>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <div class="flex justify-between"><span>Calories</span><span class="font-semibold">${item.calories.toFixed(0)}</span></div>
+                    <div class="flex justify-between"><span>Protein</span><span class="font-semibold">${item.protein.toFixed(1)}g</span></div>
+                    <div class="flex justify-between"><span>Carbs</span><span class="font-semibold">${item.carbs.toFixed(1)}g</span></div>
+                    <div class="flex justify-between"><span>Fat</span><span class="font-semibold">${item.fat.toFixed(1)}g</span></div>
+                    <div class="flex justify-between col-span-2"><span>Fiber</span><span class="font-semibold">${item.fiber.toFixed(1)}g</span></div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- MODAL LOGIC ---
+    function openAddFoodModal(mealType) {
+        state.currentMealType = mealType;
+        modalMealType.textContent = mealType;
+        addFoodModal.classList.remove('hidden');
+        renderMealBuilder();
+    }
+
+    function closeAddFoodModal() {
+        addFoodModal.classList.add('hidden');
+        state.currentMealType = null;
+        state.mealBuilderItems = [];
+        foodDescriptionInput.value = '';
+        modalError.textContent = '';
+    }
+
+    async function handleAnalyzeFood() {
+        const description = foodDescriptionInput.value.trim();
+        if (!description) { modalError.textContent = "Please enter a food description."; return; }
+        modalError.textContent = '';
+        toggleSpinner('analyze-spinner', 'analyze-btn-text', true, "Analyzing...");
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/analyze-and-find-food`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description, username: state.currentUser }),
+            });
+            if (!response.ok) { throw new Error((await response.json()).detail); }
+            const { item, quantity, new: isNew } = await response.json();
+            
+            state.mealBuilderItems.push({ food_item: item, quantity: quantity });
+            if (isNew) { state.foodItems.push(item); }
+            
+            foodDescriptionInput.value = '';
+            renderMealBuilder();
+
+        } catch (error) {
+            modalError.textContent = `Error: ${error.message}`;
+        } finally {
+            toggleSpinner('analyze-spinner', 'analyze-btn-text', false, "Add to Meal");
+        }
+    }
+    
+    function renderMealBuilder() {
+        if (state.mealBuilderItems.length === 0) {
+            mealBuilderList.innerHTML = `<p class="text-slate-400 text-center p-2">Items you analyze will appear here.</p>`;
+            confirmAddAllBtn.disabled = true;
+            return;
+        }
+        confirmAddAllBtn.disabled = false;
+        mealBuilderList.innerHTML = state.mealBuilderItems.map((buildItem, index) => {
+            const { food_item, quantity } = buildItem;
+            return `
+                <div class="flex justify-between items-center p-2 bg-green-50 rounded-md">
+                    <span class="text-slate-700">${quantity.toFixed(2)} x ${food_item.name}</span>
+                    <button data-index="${index}" class="remove-builder-item-btn text-red-400 hover:text-red-600 font-bold">&times;</button>
+                </div>
+            `;
+        }).join('');
+
+        document.querySelectorAll('.remove-builder-item-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const indexToRemove = parseInt(e.target.dataset.index);
+                state.mealBuilderItems.splice(indexToRemove, 1);
+                renderMealBuilder();
+            });
+        });
+    }
+
+    async function handleConfirmAddAll() {
+        if (state.mealBuilderItems.length === 0) return;
+        const logPromises = state.mealBuilderItems.map(item => {
+            const newLog = {
+                date: state.currentDate,
+                meal_type: state.currentMealType,
+                quantity: item.quantity,
+                food_item_id: item.food_item.id,
+            };
+            return fetch(`${API_BASE_URL}/api/log/${state.currentUser}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newLog),
+            });
+        });
+
+        try {
+            await Promise.all(logPromises);
+            await fetchLogsForDate(state.currentDate);
+            closeAddFoodModal();
+        } catch (error) {
+            modalError.textContent = "Could not save one or more items.";
+        }
+    }
+    
+    // --- UTILITY FUNCTIONS ---
+    async function handleDeleteLog(logId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/log/${logId}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error("Failed to delete log.");
+            await fetchLogsForDate(state.currentDate);
+        } catch (error) {
+            console.error("Could not delete the item.", error);
+        }
+    }
+
+    function updateProgressCircle(id, v, t) { 
+        const c = document.getElementById(id);
+        if (!c) return;
+        const r = c.r.baseVal.value;
+        const circ = 2 * Math.PI * r;
+        const offset = t > 0 ? circ - (v / t * circ) : circ;
+        c.style.strokeDasharray = `${circ} ${circ}`;
+        c.style.strokeDashoffset = isNaN(offset) || offset < 0 ? circ : offset;
+    }
+
+    function updateProgressBar(id, v, t) { 
+        const b = document.getElementById(id);
+        if (!b) return;
+        const percentage = t > 0 ? Math.min((v / t) * 100, 100) : 0;
+        b.style.width = `${percentage}%`;
+    }
+
+    function toggleSpinner(spinnerId, textId, show, textWhileLoading = '') { 
+        document.getElementById(spinnerId).classList.toggle('hidden',!show); 
+        const textEl = document.getElementById(textId); 
+        if(textEl) {
+            if(show) { textEl.dataset.originalText = textEl.textContent; textEl.textContent = textWhileLoading; }
+            else { textEl.textContent = textEl.dataset.originalText || ''; }
+        }
+    }
+
+    // --- START ---
+    init();
+});
+</script>
+</body>
+</html>
+
