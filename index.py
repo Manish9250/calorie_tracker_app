@@ -281,7 +281,7 @@ async def read_root():
     # __file__ is the path to the current script (api/index.py)
     # os.path.dirname(__file__) is the directory (api/)
     # os.path.join(..., '..', 'index.html') goes up one level and finds index.html
-    html_file_path = os.path.join(os.path.dirname(__file__), '..', 'index.html')
+    html_file_path = os.path.join(os.path.dirname(__file__), '.', 'index.html')
     
     try:
         with open(html_file_path, 'r') as f:
