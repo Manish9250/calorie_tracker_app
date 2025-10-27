@@ -177,7 +177,7 @@ async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depe
         Otherwise, provide data for one piece/slice/unit.
         Return a clean JSON object with keys: "name", "calories", "protein", "carbs", "fat", "fiber".
         The name should be a cleaned-up version. All values must be numbers.
-        
+
     """
     try:
         response = await model.generate_content_async(nutrition_prompt)
@@ -274,10 +274,21 @@ def get_calendar_data(username: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error fetching calendar data: {e}")
     
 
-# @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-# async def read_root():
-#     try:
-#         with open("../index.html") as f:
-#             return HTMLResponse(content=f.read())
-#     except FileNotFoundError:
-#         raise HTTPException(status_code=404, detail="index.html not found...")
+# --- ADD THIS FUNCTION BACK AT THE END ---
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def read_root():
+    # Construct the path to index.html relative to this script's location
+    # __file__ is the path to the current script (api/index.py)
+    # os.path.dirname(__file__) is the directory (api/)
+    # os.path.join(..., '..', 'index.html') goes up one level and finds index.html
+    html_file_path = os.path.join(os.path.dirname(__file__), '..', 'index.html')
+    
+    try:
+        with open(html_file_path, 'r') as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        print(f"Error: index.html not found at expected path: {html_file_path}")
+        raise HTTPException(status_code=404, detail="index.html not found.")
+    except Exception as e:
+        print(f"Error reading index.html: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error reading homepage.")
