@@ -177,6 +177,7 @@ async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depe
         Otherwise, provide data for one piece/slice/unit.
         Return a clean JSON object with keys: "name", "calories", "protein", "carbs", "fat", "fiber".
         The name should be a cleaned-up version. All values must be numbers.
+        
     """
     try:
         response = await model.generate_content_async(nutrition_prompt)
