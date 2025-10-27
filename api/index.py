@@ -271,5 +271,12 @@ def get_calendar_data(username: str, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error fetching calendar data: {e}") 
         raise HTTPException(status_code=500, detail=f"Error fetching calendar data: {e}")
+    
 
-
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def read_root():
+    try:
+        with open("../index.html") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="index.html not found...")
