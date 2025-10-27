@@ -112,7 +112,7 @@ def get_db():
         db_session.close()
 
 # --- API Endpoints ---
-@app.post("/login")
+@app.post("/api/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == request.username).first()
     if not user:
@@ -125,7 +125,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Incorrect password")
     return {"status": "success", "message": "Login successful."}
 
-@app.post("/analyze-and-find-food")
+@app.post("/api/analyze-and-find-food")
 async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == request.username).first()
     if not user:
@@ -202,14 +202,14 @@ async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depe
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI nutrition fetch failed: {e}")
 
-@app.get("/food-items/{username}", response_model=List[FoodItemInDB])
+@app.get("/api/api/food-items/{username}", response_model=List[FoodItemInDB])
 def get_user_food_items(username: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return db.query(FoodItem).filter(FoodItem.user_id == user.id).order_by(FoodItem.name).all()
 
-@app.post("/log/{username}", response_model=FoodLogInDB)
+@app.post("/api/log/{username}", response_model=FoodLogInDB)
 def create_food_log(username: str, log: FoodLogCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -220,14 +220,14 @@ def create_food_log(username: str, log: FoodLogCreate, db: Session = Depends(get
     db.refresh(db_log)
     return db_log
 
-@app.get("/log/{username}/{log_date}", response_model=List[FoodLogInDB])
+@app.get("/api/log/{username}/{log_date}", response_model=List[FoodLogInDB])
 def get_logs_for_date(username: str, log_date: date, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return db.query(FoodLog).filter(FoodLog.user_id == user.id, FoodLog.date == log_date).all()
 
-@app.delete("/log/{log_id}")
+@app.delete("/api/log/{log_id}")
 def delete_log(log_id: int, db: Session = Depends(get_db)):
     log_to_delete = db.query(FoodLog).filter(FoodLog.id == log_id).first()
     if not log_to_delete:
@@ -236,7 +236,7 @@ def delete_log(log_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": "Log deleted"}
 
-@app.get("/stats/{username}/calendar-data")
+@app.get("/api/stats/{username}/calendar-data")
 def get_calendar_data(username: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
