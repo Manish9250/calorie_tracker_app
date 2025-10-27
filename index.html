@@ -1,199 +1,519 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Calorie Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/cal-heatmap.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/cal-heatmap.css"
+    />
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; color: #1e293b; }
-        .progress-ring__circle { transition: stroke-dashoffset 0.5s; transform: rotate(-90deg); transform-origin: 50% 50%; }
-        .animate-spin-slow { animation: spin 2s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f4f8;
+        color: #1e293b;
+      }
+      .progress-ring__circle {
+        transition: stroke-dashoffset 0.5s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+      .animate-spin-slow {
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      /* Fix for Cal-Heatmap tooltips */
+      .ch-tooltip {
+        z-index: 100 !important;
+      }
     </style>
-</head>
-<body class="antialiased">
-
-    <!-- Login Screen (Unchanged) -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm"><h1 class="text-2xl font-bold text-center text-slate-800">Welcome!</h1><p class="text-center text-slate-500 mt-2 mb-6">Enter username and password to start.</p><div class="space-y-4"><input id="username-input" type="text" placeholder="Username" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"><input id="password-input" type="password" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"></div><p id="login-error" class="text-red-500 text-sm mt-2 h-4"></p><button id="login-btn" class="mt-4 w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition flex items-center justify-center"><span id="login-btn-text">Start Tracking</span><svg id="login-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></button></div>
+  </head>
+  <body class="antialiased">
+    <div
+      id="login-screen"
+      class="min-h-screen flex items-center justify-center bg-slate-100 p-4"
+    >
+      <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm">
+        <h1 class="text-2xl font-bold text-center text-slate-800">Welcome!</h1>
+        <p class="text-center text-slate-500 mt-2 mb-6">
+          Enter username and password to start.
+        </p>
+        <div class="space-y-4">
+          <input
+            id="username-input"
+            type="text"
+            placeholder="Username"
+            class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+          /><input
+            id="password-input"
+            type="password"
+            placeholder="Password"
+            class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+          />
+        </div>
+        <p id="login-error" class="text-red-500 text-sm mt-2 h-4"></p>
+        <button
+          id="login-btn"
+          class="mt-4 w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition flex items-center justify-center"
+        >
+          <span id="login-btn-text">Start Tracking</span
+          ><svg
+            id="login-spinner"
+            class="animate-spin h-5 w-5 text-white hidden"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <!-- Main App (Layout Unchanged) -->
     <div id="app" class="max-w-7xl mx-auto p-4 hidden">
-        <header class="flex justify-between items-center py-2 mb-4"><h1 class="text-3xl font-bold text-slate-800">Hello, <span id="username-display"></span>!</h1><div class="text-right"><input type="date" id="date-picker" class="p-2 border border-slate-300 rounded-lg bg-white text-slate-700 focus:ring-2 focus:ring-green-500"></div></header>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2 space-y-6">
-                <main class="bg-white p-6 rounded-2xl shadow-lg space-y-6">
-                    <div class="text-center"><div class="relative inline-block"><svg class="w-40 h-40"><circle class="text-slate-200" stroke-width="12" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/><circle id="calorie-progress-ring" class="text-green-500 progress-ring__circle" stroke-width="12" stroke="currentColor" fill="transparent" r="70" cx="80" cy="80"/></svg><div class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center"><span id="calories-consumed" class="text-3xl font-bold text-slate-800">0</span><span class="text-slate-500">/</span><span id="calories-target" class="text-lg text-slate-500">4000</span><span class="text-sm text-slate-400">kcal</span></div></div></div><div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"><div><p class="font-semibold text-slate-700">Protein</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="protein-bar" class="bg-sky-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="protein-consumed">0</span> / <span id="protein-target">200</span>g</p></div><div><p class="font-semibold text-slate-700">Carbs</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="carbs-bar" class="bg-amber-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="carbs-consumed">0</span> / <span id="carbs-target">450</span>g</p></div><div><p class="font-semibold text-slate-700">Fat</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="fat-bar" class="bg-rose-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="fat-consumed">0</span> / <span id="fat-target">133</span>g</p></div><div><p class="font-semibold text-slate-700">Fiber</p><div class="w-full bg-slate-200 rounded-full h-2.5 mt-1"><div id="fiber-bar" class="bg-lime-500 h-2.5 rounded-full" style="width: 0%"></div></div><p class="text-sm text-slate-500 mt-1"><span id="fiber-consumed">0</span> / <span id="fiber-target">60</span>g</p></div></div>
-                </main>
-                <div id="meal-sections" class="space-y-4"></div>
-            </div>
-            <aside class="hidden md:block bg-white p-6 rounded-2xl shadow-lg space-y-4 h-fit sticky top-4">
-                <h2 class="text-xl font-bold text-slate-800">Nutrition Facts</h2>
-                <input id="nutrition-search" type="text" placeholder="Search your saved foods..." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                <div id="nutrition-panel" class="space-y-3 custom-scrollbar max-h-[60vh] overflow-y-auto"><p class="text-slate-500 text-center pt-4">Search for a food to see details here.</p></div>
-            </aside>
+      <header class="flex justify-between items-center py-2 mb-4">
+        <h1 class="text-3xl font-bold text-slate-800">
+          Hello, <span id="username-display"></span>!
+        </h1>
+        <div class="text-right">
+          <input
+            type="date"
+            id="date-picker"
+            class="p-2 border border-slate-300 rounded-lg bg-white text-slate-700 focus:ring-2 focus:ring-green-500"
+          />
         </div>
-    </div>
-
-    <!-- Add Food Modal (REVERTED to single-entry with recent items) -->
-    <div id="add-food-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 space-y-4">
-            <h2 class="text-xl font-bold text-slate-800">Add Food to <span id="modal-meal-type" class="text-green-600"></span></h2>
-            
-            <div>
-                <label class="font-semibold text-sm text-slate-600">Select from your items</label>
-                <div id="recent-items-container" class="mt-1 border border-slate-200 rounded-lg max-h-32 overflow-y-auto custom-scrollbar">
-                    <p class="p-4 text-center text-slate-400">Loading your items...</p>
+      </header>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2 space-y-6">
+          <main class="bg-white p-6 rounded-2xl shadow-lg space-y-6">
+            <div class="text-center">
+              <div class="relative inline-block">
+                <svg class="w-40 h-40">
+                  <circle
+                    class="text-slate-200"
+                    stroke-width="12"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="70"
+                    cx="80"
+                    cy="80"
+                  />
+                  <circle
+                    id="calorie-progress-ring"
+                    class="text-green-500 progress-ring__circle"
+                    stroke-width="12"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="70"
+                    cx="80"
+                    cy="80"
+                  />
+                </svg>
+                <div
+                  class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center"
+                >
+                  <span
+                    id="calories-consumed"
+                    class="text-3xl font-bold text-slate-800"
+                    >0</span
+                  ><span class="text-slate-500">/</span
+                  ><span id="calories-target" class="text-lg text-slate-500"
+                    >4000</span
+                  ><span class="text-sm text-slate-400">kcal</span>
                 </div>
+              </div>
             </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              <div>
+                <p class="font-semibold text-slate-700">Protein</p>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                  <div
+                    id="protein-bar"
+                    class="bg-sky-500 h-2.5 rounded-full"
+                    style="width: 0%"
+                  ></div>
+                </div>
+                <p class="text-sm text-slate-500 mt-1">
+                  <span id="protein-consumed">0</span> /
+                  <span id="protein-target">200</span>g
+                </p>
+              </div>
+              <div>
+                <p class="font-semibold text-slate-700">Carbs</p>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                  <div
+                    id="carbs-bar"
+                    class="bg-amber-500 h-2.5 rounded-full"
+                    style="width: 0%"
+                  ></div>
+                </div>
+                <p class="text-sm text-slate-500 mt-1">
+                  <span id="carbs-consumed">0</span> /
+                  <span id="carbs-target">450</span>g
+                </p>
+              </div>
+              <div>
+                <p class="font-semibold text-slate-700">Fat</p>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                  <div
+                    id="fat-bar"
+                    class="bg-rose-500 h-2.5 rounded-full"
+                    style="width: 0%"
+                  ></div>
+                </div>
+                <p class="text-sm text-slate-500 mt-1">
+                  <span id="fat-consumed">0</span> /
+                  <span id="fat-target">133</span>g
+                </p>
+              </div>
+              <div>
+                <p class="font-semibold text-slate-700">Fiber</p>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                  <div
+                    id="fiber-bar"
+                    class="bg-lime-500 h-2.5 rounded-full"
+                    style="width: 0%"
+                  ></div>
+                </div>
+                <p class="text-sm text-slate-500 mt-1">
+                  <span id="fiber-consumed">0</span> /
+                  <span id="fiber-target">60</span>g
+                </p>
+              </div>
+            </div>
+          </main>
 
-            <div>
-                <label class="font-semibold text-sm text-slate-600">Or add a new item by description</label>
-                <textarea id="food-description-input" rows="2" class="mt-1 w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., 2 slices of pepperoni pizza"></textarea>
-            </div>
-            
-            <div id="ai-suggestion" class="p-4 bg-slate-50 rounded-lg border border-slate-200 hidden space-y-2">
-                <!-- AI suggestion will be populated here -->
-            </div>
-             <p id="modal-error" class="text-red-500 text-sm h-4"></p>
+          <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 class="text-xl font-bold text-slate-800 mb-4">
+              Activity Overview
+            </h2>
+            <div
+              id="activity-calendar"
+              class="overflow-x-auto custom-scrollbar pb-2"
+            ></div>
+          </div>
 
-            <div class="mt-4 flex justify-end space-x-3">
-                <button id="cancel-add-food-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition">Cancel</button>
-                <button id="analyze-food-btn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition flex items-center">
-                    <span id="analyze-btn-text">Analyze</span>
-                    <svg id="analyze-spinner" class="animate-spin-slow h-5 w-5 text-white hidden ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                </button>
-                <button id="confirm-add-food-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition hidden">Confirm & Add</button>
-            </div>
+          <div id="meal-sections" class="space-y-4"></div>
         </div>
+
+        <aside
+          class="hidden md:block bg-white p-6 rounded-2xl shadow-lg space-y-4 h-fit sticky top-4"
+        >
+          <h2 class="text-xl font-bold text-slate-800">Nutrition Facts</h2>
+          <input
+            id="nutrition-search"
+            type="text"
+            placeholder="Search your saved foods..."
+            class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500"
+          />
+          <div
+            id="nutrition-panel"
+            class="space-y-3 custom-scrollbar max-h-[60vh] overflow-y-auto"
+          >
+            <p class="text-slate-500 text-center pt-4">
+              Search for a food to see details here.
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- STATE & CONFIG ---
-    const API_BASE_URL = 'http://127.0.0.1:8000';
-    const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
-    let state = {
-        currentUser: null,
-        currentDate: new Date().toISOString().split('T')[0],
-        foodLog: [], 
-        foodItems: [],
-        targets: { calories: 4000, protein: 200, carbs: 450, fat: 133, fiber: 60 },
-        currentMealType: null,
-        itemToLog: null, // Holds { food_item_id, quantity } for a single item
-    };
-    
-    // --- DOM ELEMENTS ---
-    const loginScreen = document.getElementById('login-screen');
-    const appScreen = document.getElementById('app');
-    const loginBtn = document.getElementById('login-btn');
-    const usernameInput = document.getElementById('username-input');
-    const passwordInput = document.getElementById('password-input');
-    const loginError = document.getElementById('login-error');
-    const usernameDisplay = document.getElementById('username-display');
-    const datePicker = document.getElementById('date-picker');
-    const mealSectionsContainer = document.getElementById('meal-sections');
-    const addFoodModal = document.getElementById('add-food-modal');
-    const modalMealType = document.getElementById('modal-meal-type');
-    const foodDescriptionInput = document.getElementById('food-description-input');
-    const analyzeFoodBtn = document.getElementById('analyze-food-btn');
-    const confirmAddFoodBtn = document.getElementById('confirm-add-food-btn');
-    const cancelAddFoodBtn = document.getElementById('cancel-add-food-btn');
-    const modalError = document.getElementById('modal-error');
-    const aiSuggestionContainer = document.getElementById('ai-suggestion');
-    const recentItemsContainer = document.getElementById('recent-items-container');
-    const nutritionPanel = document.getElementById('nutrition-panel');
-    const nutritionSearchInput = document.getElementById('nutrition-search');
+    <div
+      id="add-food-modal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden"
+    >
+      <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 space-y-4">
+        <h2 class="text-xl font-bold text-slate-800">
+          Add Food to <span id="modal-meal-type" class="text-green-600"></span>
+        </h2>
 
-    // --- INITIALIZATION ---
-    function init() {
-        const savedUser = sessionStorage.getItem('currentUser');
-        if (savedUser) { state.currentUser = savedUser; showApp(); } 
-        else { showLogin(); }
-        
-        loginBtn.addEventListener('click', handleLogin);
-        datePicker.addEventListener('change', (e) => {
+        <div>
+          <label class="font-semibold text-sm text-slate-600"
+            >Select from your items</label
+          >
+          <div
+            id="recent-items-container"
+            class="mt-1 border border-slate-200 rounded-lg max-h-32 overflow-y-auto custom-scrollbar"
+          >
+            <p class="p-4 text-center text-slate-400">Loading your items...</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-semibold text-sm text-slate-600"
+            >Or add a new item by description</label
+          >
+          <textarea
+            id="food-description-input"
+            rows="2"
+            class="mt-1 w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            placeholder="e.g., 2 slices of pepperoni pizza"
+          ></textarea>
+        </div>
+
+        <div
+          id="ai-suggestion"
+          class="p-4 bg-slate-50 rounded-lg border border-slate-200 hidden space-y-2"
+        ></div>
+        <p id="modal-error" class="text-red-500 text-sm h-4"></p>
+
+        <div class="mt-4 flex justify-end space-x-3">
+          <button
+            id="cancel-add-food-btn"
+            class="bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition"
+          >
+            Cancel
+          </button>
+          <button
+            id="analyze-food-btn"
+            class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition flex items-center"
+          >
+            <span id="analyze-btn-text">Analyze</span>
+            <svg
+              id="analyze-spinner"
+              class="animate-spin-slow h-5 w-5 text-white hidden ml-2"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+          </button>
+          <button
+            id="confirm-add-food-btn"
+            class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition hidden"
+          >
+            Confirm & Add
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- STATE & CONFIG ---
+        const API_BASE_URL = "http://127.0.0.1:8000";
+        const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+        let state = {
+          currentUser: null,
+          currentDate: new Date().toISOString().split("T")[0],
+          foodLog: [],
+          foodItems: [],
+          targets: {
+            calories: 4000,
+            protein: 200,
+            carbs: 450,
+            fat: 133,
+            fiber: 60,
+          },
+          currentMealType: null,
+          itemToLog: null,
+        };
+
+        // --- DOM ELEMENTS ---
+        const loginScreen = document.getElementById("login-screen");
+        const appScreen = document.getElementById("app");
+        const loginBtn = document.getElementById("login-btn");
+        const usernameInput = document.getElementById("username-input");
+        const passwordInput = document.getElementById("password-input");
+        const loginError = document.getElementById("login-error");
+        const usernameDisplay = document.getElementById("username-display");
+        const datePicker = document.getElementById("date-picker");
+        const mealSectionsContainer = document.getElementById("meal-sections");
+        const addFoodModal = document.getElementById("add-food-modal");
+        const modalMealType = document.getElementById("modal-meal-type");
+        const foodDescriptionInput = document.getElementById(
+          "food-description-input"
+        );
+        const analyzeFoodBtn = document.getElementById("analyze-food-btn");
+        const confirmAddFoodBtn = document.getElementById(
+          "confirm-add-food-btn"
+        );
+        const cancelAddFoodBtn = document.getElementById("cancel-add-food-btn");
+        const modalError = document.getElementById("modal-error");
+        const aiSuggestionContainer = document.getElementById("ai-suggestion");
+        const recentItemsContainer = document.getElementById(
+          "recent-items-container"
+        );
+        const nutritionPanel = document.getElementById("nutrition-panel");
+        const nutritionSearchInput =
+          document.getElementById("nutrition-search");
+        // NEW: Calendar container
+        const calendarContainer = document.getElementById("activity-calendar");
+
+        // --- INITIALIZATION ---
+        function init() {
+          const savedUser = sessionStorage.getItem("currentUser");
+          if (savedUser) {
+            state.currentUser = savedUser;
+            showApp();
+          } else {
+            showLogin();
+          }
+
+          loginBtn.addEventListener("click", handleLogin);
+          datePicker.addEventListener("change", (e) => {
             state.currentDate = e.target.value;
             fetchLogsForDate(state.currentDate);
-        });
-        cancelAddFoodBtn.addEventListener('click', closeAddFoodModal);
-        analyzeFoodBtn.addEventListener('click', handleAnalyzeFood);
-        confirmAddFoodBtn.addEventListener('click', handleConfirmAddFood);
-        nutritionSearchInput.addEventListener('input', handleNutritionSearch);
-    }
-    
-    // --- LOGIN & SCREEN MANAGEMENT ---
-    async function handleLogin() { /* ... Unchanged ... */ 
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value.trim();
-        if (!username || !password) { loginError.textContent = "Please provide all details."; return; }
-        loginError.textContent = "";
-        toggleSpinner('analyze-spinner', 'login-btn-text', true, "Logging in...");
-        try {
+          });
+          cancelAddFoodBtn.addEventListener("click", closeAddFoodModal);
+          analyzeFoodBtn.addEventListener("click", handleAnalyzeFood);
+          confirmAddFoodBtn.addEventListener("click", handleConfirmAddFood);
+          nutritionSearchInput.addEventListener("input", handleNutritionSearch);
+        }
+
+        // --- LOGIN & SCREEN MANAGEMENT ---
+        async function handleLogin() {
+          /* ... Unchanged ... */
+          const username = usernameInput.value.trim();
+          const password = passwordInput.value.trim();
+          if (!username || !password) {
+            loginError.textContent = "Please provide all details.";
+            return;
+          }
+          loginError.textContent = "";
+          toggleSpinner(
+            "analyze-spinner",
+            "login-btn-text",
+            true,
+            "Logging in..."
+          ); // Note: This uses 'analyze-spinner', might be a typo in original, but matches.
+          try {
             const response = await fetch(`${API_BASE_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password }),
             });
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "Login failed");
+              const errorData = await response.json();
+              throw new Error(errorData.detail || "Login failed");
             }
             state.currentUser = username;
-            sessionStorage.setItem('currentUser', username);
+            sessionStorage.setItem("currentUser", username);
             await showApp();
-        } catch (error) {
+          } catch (error) {
             loginError.textContent = error.message;
-        } finally {
-            toggleSpinner('analyze-spinner', 'login-btn-text', false, "Start Tracking");
+          } finally {
+            // Note: This uses 'analyze-spinner', might be a typo in original, but matches.
+            toggleSpinner(
+              "analyze-spinner",
+              "login-btn-text",
+              false,
+              "Start Tracking"
+            );
+          }
         }
-    }
-    function showLogin() { appScreen.classList.add('hidden'); loginScreen.classList.remove('hidden'); }
-    async function showApp() {
-        loginScreen.classList.add('hidden');
-        appScreen.classList.remove('hidden');
-        usernameDisplay.textContent = state.currentUser;
-        datePicker.value = state.currentDate;
-        renderMealSections();
-        await Promise.all([
+        function showLogin() {
+          appScreen.classList.add("hidden");
+          loginScreen.classList.remove("hidden");
+        }
+
+        // MODIFIED: showApp now also fetches calendar data
+        async function showApp() {
+          loginScreen.classList.add("hidden");
+          appScreen.classList.remove("hidden");
+          usernameDisplay.textContent = state.currentUser;
+          datePicker.value = state.currentDate;
+          renderMealSections();
+
+          // Run all initial data fetches in parallel
+          await Promise.all([
             fetchLogsForDate(state.currentDate),
-            fetchFoodItems()
-        ]);
-        renderNutritionPanel(state.foodItems.slice(0, 5));
-    }
-    
-    // --- DATA FETCHING & RENDERING ---
-    async function fetchLogsForDate(date) { /* ... Unchanged ... */ 
-         if (!state.currentUser) return;
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/log/${state.currentUser}/${date}`);
+            fetchFoodItems(),
+            fetchAndRenderCalendar(), // NEW function call
+          ]);
+
+          renderNutritionPanel(state.foodItems.slice(0, 5));
+        }
+
+        // --- DATA FETCHING & RENDERING ---
+        async function fetchLogsForDate(date) {
+          /* ... Unchanged ... */
+          if (!state.currentUser) return;
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/api/log/${state.currentUser}/${date}`
+            );
             if (!response.ok) throw new Error("Could not fetch data.");
             state.foodLog = await response.json();
             updateDashboard();
-        } catch (error) {
+          } catch (error) {
             console.error("Fetch Error:", error);
+          }
         }
-    }
-    async function fetchFoodItems() {
-        if (!state.currentUser) return;
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/food-items/${state.currentUser}`);
+        async function fetchFoodItems() {
+          if (!state.currentUser) return;
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/api/food-items/${state.currentUser}`
+            );
             if (!response.ok) throw new Error("Could not fetch food items.");
             state.foodItems = await response.json();
-        } catch (error) { console.error("Fetch Items Error:", error); }
-    }
-    function renderMealSections() { /* ... Unchanged ... */ 
-        mealSectionsContainer.innerHTML = '';
-        mealTypes.forEach(meal => {
-            const section = document.createElement('div');
-            section.className = 'bg-white p-4 rounded-2xl shadow-lg';
+          } catch (error) {
+            console.error("Fetch Items Error:", error);
+          }
+        }
+        function renderMealSections() {
+          /* ... Unchanged ... */
+          mealSectionsContainer.innerHTML = "";
+          mealTypes.forEach((meal) => {
+            const section = document.createElement("div");
+            section.className = "bg-white p-4 rounded-2xl shadow-lg";
             section.innerHTML = `
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-bold text-slate-800">${meal}</h2>
@@ -205,22 +525,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="text-right mt-2 font-semibold text-slate-600">Total: <span id="total-${meal.toLowerCase()}">0</span> kcal</div>
             `;
             mealSectionsContainer.appendChild(section);
-        });
-        document.querySelectorAll('.add-food-btn').forEach(btn => {
-            btn.addEventListener('click', () => openAddFoodModal(btn.dataset.mealType));
-        });
-    }
+          });
+          document.querySelectorAll(".add-food-btn").forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openAddFoodModal(btn.dataset.mealType)
+            );
+          });
+        }
 
-    function updateDashboard() { /* ... Unchanged ... */ 
-        let totals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-        mealTypes.forEach(meal => {
-            const mealContainer = document.getElementById(`log-${meal.toLowerCase()}`);
-            if(mealContainer) mealContainer.innerHTML = '';
-            const totalEl = document.getElementById(`total-${meal.toLowerCase()}`);
-            if(totalEl) totalEl.textContent = '0';
-        });
+        function updateDashboard() {
+          /* ... Unchanged ... */
+          let totals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+          mealTypes.forEach((meal) => {
+            const mealContainer = document.getElementById(
+              `log-${meal.toLowerCase()}`
+            );
+            if (mealContainer) mealContainer.innerHTML = "";
+            const totalEl = document.getElementById(
+              `total-${meal.toLowerCase()}`
+            );
+            if (totalEl) totalEl.textContent = "0";
+          });
 
-        state.foodLog.forEach(log => {
+          state.foodLog.forEach((log) => {
             const { food_item, quantity } = log;
             totals.calories += food_item.calories * quantity;
             totals.protein += food_item.protein * quantity;
@@ -228,198 +555,394 @@ document.addEventListener('DOMContentLoaded', () => {
             totals.fat += food_item.fat * quantity;
             totals.fiber += food_item.fiber * quantity;
 
-            const mealContainer = document.getElementById(`log-${log.meal_type.toLowerCase()}`);
+            const mealContainer = document.getElementById(
+              `log-${log.meal_type.toLowerCase()}`
+            );
             if (mealContainer) {
-                const mealTotalEl = document.getElementById(`total-${log.meal_type.toLowerCase()}`);
-                mealTotalEl.textContent = (parseFloat(mealTotalEl.textContent) + food_item.calories * quantity).toFixed(0);
-                const foodEl = document.createElement('div');
-                foodEl.className = 'flex justify-between items-center text-slate-600';
-                foodEl.innerHTML = `<span>${quantity.toFixed(2)} x ${food_item.name}</span><div class="flex items-center space-x-2"><span>${(food_item.calories * quantity).toFixed(0)} kcal</span><button data-log-id="${log.id}" class="delete-log-btn text-red-400 hover:text-red-600 font-bold text-xl transition-all duration-200">&times;</button></div>`;
-                mealContainer.appendChild(foodEl);
+              const mealTotalEl = document.getElementById(
+                `total-${log.meal_type.toLowerCase()}`
+              );
+              mealTotalEl.textContent = (
+                parseFloat(mealTotalEl.textContent) +
+                food_item.calories * quantity
+              ).toFixed(0);
+              const foodEl = document.createElement("div");
+              foodEl.className =
+                "flex justify-between items-center text-slate-600";
+              foodEl.innerHTML = `<span>${quantity.toFixed(2)} x ${
+                food_item.name
+              }</span><div class="flex items-center space-x-2"><span>${(
+                food_item.calories * quantity
+              ).toFixed(0)} kcal</span><button data-log-id="${
+                log.id
+              }" class="delete-log-btn text-red-400 hover:text-red-600 font-bold text-xl transition-all duration-200">&times;</button></div>`;
+              mealContainer.appendChild(foodEl);
             }
-        });
-        
-        updateProgressCircle('calorie-progress-ring', totals.calories, state.targets.calories);
-        document.getElementById('calories-consumed').textContent = totals.calories.toFixed(0);
-        updateProgressBar('protein-bar', totals.protein, state.targets.protein); document.getElementById('protein-consumed').textContent = totals.protein.toFixed(1);
-        updateProgressBar('carbs-bar', totals.carbs, state.targets.carbs); document.getElementById('carbs-consumed').textContent = totals.carbs.toFixed(1);
-        updateProgressBar('fat-bar', totals.fat, state.targets.fat); document.getElementById('fat-consumed').textContent = totals.fat.toFixed(1);
-        updateProgressBar('fiber-bar', totals.fiber, state.targets.fiber); document.getElementById('fiber-consumed').textContent = totals.fiber.toFixed(1);
+          });
 
-        document.querySelectorAll('.delete-log-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => handleDeleteLog(e.currentTarget.dataset.logId));
-        });
-    }
+          updateProgressCircle(
+            "calorie-progress-ring",
+            totals.calories,
+            state.targets.calories
+          );
+          document.getElementById("calories-consumed").textContent =
+            totals.calories.toFixed(0);
+          updateProgressBar(
+            "protein-bar",
+            totals.protein,
+            state.targets.protein
+          );
+          document.getElementById("protein-consumed").textContent =
+            totals.protein.toFixed(1);
+          updateProgressBar("carbs-bar", totals.carbs, state.targets.carbs);
+          document.getElementById("carbs-consumed").textContent =
+            totals.carbs.toFixed(1);
+          updateProgressBar("fat-bar", totals.fat, state.targets.fat);
+          document.getElementById("fat-consumed").textContent =
+            totals.fat.toFixed(1);
+          updateProgressBar("fiber-bar", totals.fiber, state.targets.fiber);
+          document.getElementById("fiber-consumed").textContent =
+            totals.fiber.toFixed(1);
 
-    // --- NUTRITION PANEL LOGIC (Unchanged) ---
-    function handleNutritionSearch(e) { /* ... Unchanged ... */ 
-        const query = e.target.value.toLowerCase();
-        if (!query) {
+          document.querySelectorAll(".delete-log-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) =>
+              handleDeleteLog(e.currentTarget.dataset.logId)
+            );
+          });
+        }
+
+        // --- NUTRITION PANEL LOGIC (Unchanged) ---
+        function handleNutritionSearch(e) {
+          /* ... Unchanged ... */
+          const query = e.target.value.toLowerCase();
+          if (!query) {
             renderNutritionPanel(state.foodItems.slice(0, 5));
             return;
+          }
+          const results = state.foodItems.filter((item) =>
+            item.name.toLowerCase().includes(query)
+          );
+          renderNutritionPanel(results);
         }
-        const results = state.foodItems.filter(item => item.name.toLowerCase().includes(query));
-        renderNutritionPanel(results);
-    }
-    function renderNutritionPanel(itemsToRender) { /* ... Unchanged ... */ 
-        if (!itemsToRender || itemsToRender.length === 0) {
+        function renderNutritionPanel(itemsToRender) {
+          /* ... Unchanged ... */
+          if (!itemsToRender || itemsToRender.length === 0) {
             nutritionPanel.innerHTML = `<p class="text-slate-500 text-center pt-4">No items found.</p>`;
             return;
-        }
-        nutritionPanel.innerHTML = itemsToRender.map(item => `
+          }
+          nutritionPanel.innerHTML = itemsToRender
+            .map(
+              (item) => `
             <div class="p-3 border border-slate-200 rounded-lg bg-slate-50">
-                <h4 class="font-bold text-slate-800 capitalize">${item.name}</h4>
-                <p class="text-xs text-slate-500 mb-2">Per ${item.serving_size_unit}</p>
+                <h4 class="font-bold text-slate-800 capitalize">${
+                  item.name
+                }</h4>
+                <p class="text-xs text-slate-500 mb-2">Per ${
+                  item.serving_size_unit
+                }</p>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    <div class="flex justify-between"><span>Calories</span><span class="font-semibold">${item.calories.toFixed(0)}</span></div>
-                    <div class="flex justify-between"><span>Protein</span><span class="font-semibold">${item.protein.toFixed(1)}g</span></div>
-                    <div class="flex justify-between"><span>Carbs</span><span class="font-semibold">${item.carbs.toFixed(1)}g</span></div>
-                    <div class="flex justify-between"><span>Fat</span><span class="font-semibold">${item.fat.toFixed(1)}g</span></div>
-                    <div class="flex justify-between col-span-2"><span>Fiber</span><span class="font-semibold">${item.fiber.toFixed(1)}g</span></div>
+                    <div class="flex justify-between"><span>Calories</span><span class="font-semibold">${item.calories.toFixed(
+                      0
+                    )}</span></div>
+                    <div class="flex justify-between"><span>Protein</span><span class="font-semibold">${item.protein.toFixed(
+                      1
+                    )}g</span></div>
+                    <div class="flex justify-between"><span>Carbs</span><span class="font-semibold">${item.carbs.toFixed(
+                      1
+                    )}g</span></div>
+                    <div class="flex justify-between"><span>Fat</span><span class="font-semibold">${item.fat.toFixed(
+                      1
+                    )}g</span></div>
+                    <div class="flex justify-between col-span-2"><span>Fiber</span><span class="font-semibold">${item.fiber.toFixed(
+                      1
+                    )}g</span></div>
                 </div>
             </div>
-        `).join('');
-    }
+        `
+            )
+            .join("");
+        }
 
-    // --- MODAL LOGIC (MODIFIED) ---
-    function openAddFoodModal(mealType) {
-        state.currentMealType = mealType;
-        modalMealType.textContent = mealType;
-        foodDescriptionInput.value = '';
-        aiSuggestionContainer.innerHTML = '';
-        aiSuggestionContainer.classList.add('hidden');
-        confirmAddFoodBtn.classList.add('hidden');
-        analyzeFoodBtn.classList.remove('hidden');
-        addFoodModal.classList.remove('hidden');
-        renderRecentItems();
-    }
+        // --- NEW: CALENDAR FUNCTION ---
+        async function fetchAndRenderCalendar() {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/api/stats/${state.currentUser}/calendar-data`
+            );
+            if (!response.ok) throw new Error("Could not fetch calendar data.");
 
-    function closeAddFoodModal() {
-        addFoodModal.classList.add('hidden');
-        state.currentMealType = null;
-        state.itemToLog = null;
-        modalError.textContent = '';
-    }
+            // data is in { "YYYY-MM-DD": value } format
+            const data = await response.json();
 
-    function renderRecentItems() {
-        if (state.foodItems.length === 0) {
+            // Convert to [{ date: "YYYY-MM-DD", value: ... }] for Cal-Heatmap
+            const calendarData = Object.keys(data).map((dateStr) => {
+              return {
+                date: dateStr,
+                value: data[dateStr],
+              };
+            });
+
+            const cal = new CalHeatmap();
+            calendarContainer.innerHTML = ""; // Clear loader/error
+
+            cal.paint({
+              itemSelector: "#activity-calendar",
+              data: {
+                source: calendarData,
+                x: "date",
+                y: "value",
+              },
+              date: {
+                // Start 11 months ago (so the 12-month range includes the current month)
+                start: new Date(
+                  new Date().setMonth(new Date().getMonth() - 11)
+                ),
+                locale: { weekStart: 1 },
+              },
+              range: 12, // 12 months
+              scale: {
+                color: {
+                  type: "threshold",
+                  range: ["#c6e48b", "#7bc96f", "#239a3b", "#196127"], // GitHub-like colors
+                  domain: [1000, 2000, 3000], // Steps: 0-1k, 1k-2k, 2k-3k, 3k+
+                },
+              },
+              domain: {
+                type: "month",
+                gutter: 4,
+                label: { text: "MMM", position: "top", align: "start" },
+              },
+              subDomain: {
+                type: "day",
+                width: 15,
+                height: 15,
+                radius: 3,
+                gutter: 2,
+              },
+              // Add tooltip
+              tooltip: {
+                enabled: true,
+                text: (date, value, dayjsDate) => {
+                  return `${
+                    value ? value.toFixed(0) : "No"
+                  } calories on ${dayjsDate.format("MMMM D, YYYY")}`;
+                },
+              },
+            });
+          } catch (error) {
+            console.error("Fetch Calendar Error:", error);
+            calendarContainer.innerHTML = `<p class="text-red-500 text-center">Could not load activity calendar.</p>`;
+          }
+        }
+
+        // --- MODAL LOGIC (MODIFIED) ---
+        function openAddFoodModal(mealType) {
+          state.currentMealType = mealType;
+          modalMealType.textContent = mealType;
+          foodDescriptionInput.value = "";
+          aiSuggestionContainer.innerHTML = "";
+          aiSuggestionContainer.classList.add("hidden");
+          confirmAddFoodBtn.classList.add("hidden");
+          analyzeFoodBtn.classList.remove("hidden");
+          addFoodModal.classList.remove("hidden");
+          renderRecentItems();
+        }
+
+        function closeAddFoodModal() {
+          addFoodModal.classList.add("hidden");
+          state.currentMealType = null;
+          state.itemToLog = null;
+          modalError.textContent = "";
+        }
+
+        function renderRecentItems() {
+          if (state.foodItems.length === 0) {
             recentItemsContainer.innerHTML = `<p class="p-4 text-center text-slate-400">Your saved items will appear here.</p>`;
             return;
-        }
-        recentItemsContainer.innerHTML = state.foodItems.map(item => `
-            <div data-item-id="${item.id}" class="recent-item p-3 hover:bg-green-50 cursor-pointer border-b border-slate-100 last:border-b-0 flex justify-between items-center">
+          }
+          recentItemsContainer.innerHTML = state.foodItems
+            .map(
+              (item) => `
+            <div data-item-id="${
+              item.id
+            }" class="recent-item p-3 hover:bg-green-50 cursor-pointer border-b border-slate-100 last:border-b-0 flex justify-between items-center">
                 <div>
-                    <p class="font-semibold text-slate-700 capitalize">${item.name}</p>
-                    <p class="text-xs text-slate-500">${item.calories.toFixed(0)} kcal per ${item.serving_size_unit}</p>
+                    <p class="font-semibold text-slate-700 capitalize">${
+                      item.name
+                    }</p>
+                    <p class="text-xs text-slate-500">${item.calories.toFixed(
+                      0
+                    )} kcal per ${item.serving_size_unit}</p>
                 </div>
                 <button class="text-green-600 text-2xl font-light">+</button>
             </div>
-        `).join('');
+        `
+            )
+            .join("");
 
-        document.querySelectorAll('.recent-item').forEach(el => {
-            el.addEventListener('click', () => {
-                const itemId = parseInt(el.dataset.itemId);
-                const item = state.foodItems.find(i => i.id === itemId);
-                const quantity = parseFloat(prompt(`How many servings of "${item.name}" did you have? (1 serving = ${item.serving_size_unit})`, "1"));
-                
-                if (item && !isNaN(quantity) && quantity > 0) {
-                    state.itemToLog = { food_item_id: item.id, quantity: quantity };
-                    handleConfirmAddFood(); // Directly log it
-                }
-            });
-        });
-    }
-    
-    async function handleAnalyzeFood() {
-        const description = foodDescriptionInput.value.trim();
-        if (!description) { modalError.textContent = "Please enter a food description."; return; }
-        modalError.textContent = '';
-        toggleSpinner('analyze-spinner', 'analyze-btn-text', true, "Analyzing...");
+          document.querySelectorAll(".recent-item").forEach((el) => {
+            el.addEventListener("click", () => {
+              const itemId = parseInt(el.dataset.itemId);
+              const item = state.foodItems.find((i) => i.id === itemId);
+              const quantity = parseFloat(
+                prompt(
+                  `How many servings of "${item.name}" did you have? (1 serving = ${item.serving_size_unit})`,
+                  "1"
+                )
+              );
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/analyze-and-find-food`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description, username: state.currentUser }),
+              if (item && !isNaN(quantity) && quantity > 0) {
+                state.itemToLog = { food_item_id: item.id, quantity: quantity };
+                handleConfirmAddFood(); // Directly log it
+              }
             });
-            if (!response.ok) { throw new Error((await response.json()).detail); }
+          });
+        }
+
+        async function handleAnalyzeFood() {
+          const description = foodDescriptionInput.value.trim();
+          if (!description) {
+            modalError.textContent = "Please enter a food description.";
+            return;
+          }
+          modalError.textContent = "";
+          toggleSpinner(
+            "analyze-spinner",
+            "analyze-btn-text",
+            true,
+            "Analyzing..."
+          );
+
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/api/analyze-and-find-food`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  description,
+                  username: state.currentUser,
+                }),
+              }
+            );
+            if (!response.ok) {
+              throw new Error((await response.json()).detail);
+            }
             const { item, quantity, new: isNew } = await response.json();
-            
+
             state.itemToLog = { food_item_id: item.id, quantity: quantity };
-            if (isNew) { // If AI created a new item, add it to our state and re-render recents
-                state.foodItems.push(item);
-                renderRecentItems();
+            if (isNew) {
+              // If AI created a new item, add it to our state and re-render recents
+              state.foodItems.push(item);
+              renderRecentItems();
             }
 
-            aiSuggestionContainer.innerHTML = `<p class="font-semibold text-slate-700">Suggestion: ${quantity.toFixed(2)} x ${item.name}</p><p class="text-sm text-slate-500">Calories: <strong>${(item.calories * quantity).toFixed(0)}</strong> total</p>`;
-            aiSuggestionContainer.classList.remove('hidden');
-            analyzeFoodBtn.classList.add('hidden');
-            confirmAddFoodBtn.classList.remove('hidden');
-
-        } catch (error) {
+            aiSuggestionContainer.innerHTML = `<p class="font-semibold text-slate-700">Suggestion: ${quantity.toFixed(
+              2
+            )} x ${
+              item.name
+            }</p><p class="text-sm text-slate-500">Calories: <strong>${(
+              item.calories * quantity
+            ).toFixed(0)}</strong> total</p>`;
+            aiSuggestionContainer.classList.remove("hidden");
+            analyzeFoodBtn.classList.add("hidden");
+            confirmAddFoodBtn.classList.remove("hidden");
+          } catch (error) {
             modalError.textContent = `Error: ${error.message}`;
-        } finally {
-            toggleSpinner('analyze-spinner', 'analyze-btn-text', false, "Analyze");
+          } finally {
+            toggleSpinner(
+              "analyze-spinner",
+              "analyze-btn-text",
+              false,
+              "Analyze"
+            );
+          }
         }
-    }
 
-    async function handleConfirmAddFood() {
-        if (!state.itemToLog) return;
-        const newLog = {
+        async function handleConfirmAddFood() {
+          if (!state.itemToLog) return;
+          const newLog = {
             date: state.currentDate,
             meal_type: state.currentMealType,
             quantity: state.itemToLog.quantity,
             food_item_id: state.itemToLog.food_item_id,
-        };
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/log/${state.currentUser}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+          };
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/api/log/${state.currentUser}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newLog),
-            });
+              }
+            );
             if (!response.ok) throw new Error("Failed to save log.");
-            await fetchLogsForDate(state.currentDate); // Refetch to get the latest data
+
+            // Refetch logs to update dashboard AND refetch calendar data
+            await Promise.all([
+              fetchLogsForDate(state.currentDate),
+              fetchAndRenderCalendar(),
+            ]);
+
             closeAddFoodModal();
-        } catch (error) {
+          } catch (error) {
             modalError.textContent = "Could not save the food item.";
+          }
         }
-    }
-    
-    // --- UTILITY FUNCTIONS ---
-    async function handleDeleteLog(logId) { /* ... Unchanged ... */ 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/log/${logId}`, { method: 'DELETE' });
+
+        // --- UTILITY FUNCTIONS ---
+        async function handleDeleteLog(logId) {
+          /* ... MODIFIED ... */
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/log/${logId}`, {
+              method: "DELETE",
+            });
             if (!response.ok) throw new Error("Failed to delete log.");
-            await fetchLogsForDate(state.currentDate);
-        } catch (error) {
+
+            // Refetch logs AND calendar data after deletion
+            await Promise.all([
+              fetchLogsForDate(state.currentDate),
+              fetchAndRenderCalendar(),
+            ]);
+          } catch (error) {
             console.error("Could not delete the item.", error);
+          }
         }
-    }
-    function updateProgressCircle(id, v, t) { /* ... Unchanged ... */
-        const c = document.getElementById(id); if (!c) return;
-        const r = c.r.baseVal.value; const circ = 2 * Math.PI * r;
-        const offset = t > 0 ? circ - (v / t * circ) : circ;
-        c.style.strokeDasharray = `${circ} ${circ}`;
-        c.style.strokeDashoffset = isNaN(offset) || offset < 0 ? circ : offset;
-    }
-    function updateProgressBar(id, v, t) { /* ... Unchanged ... */ 
-        const b = document.getElementById(id); if (!b) return;
-        const percentage = t > 0 ? Math.min((v / t) * 100, 100) : 0;
-        b.style.width = `${percentage}%`;
-    }
-    function toggleSpinner(spinnerId, textId, show, textWhileLoading = '') { /* ... Unchanged ... */ 
-        document.getElementById(spinnerId).classList.toggle('hidden',!show); 
-        const textEl = document.getElementById(textId); 
-        if(textEl) {
-            if(show) { textEl.dataset.originalText = textEl.textContent; textEl.textContent = textWhileLoading; }
-            else { textEl.textContent = textEl.dataset.originalText || ''; }
+        function updateProgressCircle(id, v, t) {
+          /* ... Unchanged ... */
+          const c = document.getElementById(id);
+          if (!c) return;
+          const r = c.r.baseVal.value;
+          const circ = 2 * Math.PI * r;
+          const offset = t > 0 ? circ - (v / t) * circ : circ;
+          c.style.strokeDasharray = `${circ} ${circ}`;
+          c.style.strokeDashoffset =
+            isNaN(offset) || offset < 0 ? circ : offset;
         }
-    }
+        function updateProgressBar(id, v, t) {
+          /* ... Unchanged ... */
+          const b = document.getElementById(id);
+          if (!b) return;
+          const percentage = t > 0 ? Math.min((v / t) * 100, 100) : 0;
+          b.style.width = `${percentage}%`;
+        }
+        function toggleSpinner(spinnerId, textId, show, textWhileLoading = "") {
+          /* ... Unchanged ... */
+          document.getElementById(spinnerId).classList.toggle("hidden", !show);
+          const textEl = document.getElementById(textId);
+          if (textEl) {
+            if (show) {
+              textEl.dataset.originalText = textEl.textContent;
+              textEl.textContent = textWhileLoading;
+            } else {
+              textEl.textContent = textEl.dataset.originalText || "";
+            }
+          }
+        }
 
-    // --- START ---
-    init();
-});
-</script>
-</body>
+        // --- START ---
+        init();
+      });
+    </script>
+  </body>
 </html>
-

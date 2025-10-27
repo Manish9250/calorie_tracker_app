@@ -2,11 +2,10 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 import json
-import re
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey, func
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
@@ -234,6 +233,43 @@ def delete_log(log_id: int, db: Session = Depends(get_db)):
     db.delete(log_to_delete)
     db.commit()
     return {"status": "success", "message": "Log deleted"}
+
+@app.get("/api/stats/{username}/calendar-data")
+def get_calendar_data(username: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    try:
+        calories_per_day = (
+            db.query(
+                # --- CHANGE 1 ---
+                # Query for the column directly, not func.date()
+                FoodLog.date.label("log_date"),
+                func.sum(FoodLog.quantity * FoodItem.calories).label("total_calories")
+            )
+            .select_from(FoodLog)
+            .join(FoodItem, FoodLog.food_item_id == FoodItem.id)
+            .filter(FoodLog.user_id == user.id)
+            # --- CHANGE 2 ---
+            # Group by the column directly
+            .group_by(FoodLog.date)
+            .all()
+        )
+        
+        # Now, log_date will be a Python 'date' object,
+        # so .isoformat() will work correctly.
+        calendar_data = {
+            log_date.isoformat(): total_calories
+            for log_date, total_calories in calories_per_day
+            if total_calories is not None
+        }
+        print(calendar_data)
+        return calendar_data
+        
+    except Exception as e:
+        print(f"Error fetching calendar data: {e}") 
+        raise HTTPException(status_code=500, detail=f"Error fetching calendar data: {e}")
 
 # NEW: Endpoint to serve the main HTML file
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
