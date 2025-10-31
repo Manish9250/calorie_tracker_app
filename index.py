@@ -126,7 +126,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     return {"status": "success", "message": "Login successful."}
 
 @app.post("/api/analyze-and-find-food")
-async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depends(get_db)):
+def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == request.username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -146,7 +146,7 @@ async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depe
     """
     try:
         model = genai.GenerativeModel('gemini-2.5-flash-lite')
-        response = await model.generate_content_async(parsing_prompt)
+        response = model.generate_content(parsing_prompt)
         # Clean the response to ensure it's valid JSON
         cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
         parsed_result = json.loads(cleaned_response)
@@ -180,7 +180,7 @@ async def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depe
 
     """
     try:
-        response = await model.generate_content_async(nutrition_prompt)
+        response = model.generate_content(nutrition_prompt)
         cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
         nutrition_data = json.loads(cleaned_response)
         
