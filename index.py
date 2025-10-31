@@ -202,7 +202,7 @@ def analyze_and_find_food(request: FoodAnalysisRequest, db: Session = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI nutrition fetch failed: {e}")
 
-@app.get("/api/api/food-items/{username}", response_model=List[FoodItemInDB])
+@app.get("/api/food-items/{username}", response_model=List[FoodItemInDB])
 def get_user_food_items(username: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
