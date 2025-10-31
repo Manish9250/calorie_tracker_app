@@ -685,7 +685,7 @@
             const cal = new CalHeatmap();
             calendarContainer.innerHTML = ""; // Clear loader/error
 
-            cal.paint({
+            await cal.paint({
               itemSelector: "#activity-calendar",
               data: {
                 source: calendarData,
@@ -729,6 +729,8 @@
                 },
               },
             });
+            // Scrolls the calendar container to the far right
+            calendarContainer.scrollLeft = calendarContainer.scrollWidth;
           } catch (error) {
             console.error("Fetch Calendar Error:", error);
             calendarContainer.innerHTML = `<p class="text-red-500 text-center">Could not load activity calendar.</p>`;
